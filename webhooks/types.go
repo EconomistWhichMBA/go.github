@@ -5,7 +5,32 @@ package webhooks
 
 import (
 	"time"
+  "strconv"
 )
+
+type Time struct {
+  *time.Time
+}
+
+func (t *Time) UnmarshalJSON(data []byte) (err error) {
+  var tm time.Time
+  str := string(data)
+  // Try the normal time.Time.UnmarchalJSON logic first.
+  tm, err = time.Parse(`"` + time.RFC3339 + `"`, str)
+  
+  // If that fails, let's try conversion from a timestamp.
+  if err != nil {
+    var ts int64
+    ts, err = strconv. ParseInt(str, 0, 64)
+    if err != nil {
+      return err
+    }
+    tm = time.Unix(ts, 0)
+  }
+
+  *t = Time{&tm}
+	return
+}
 
 type GitCommit struct {
 	Author    string `json:"author"`
@@ -21,7 +46,7 @@ type GitHubCommit struct {
 	Distinct  bool         `json:"distinct"`
 	URL       string       `json:"url"`
 	Id        string       `json:"id"`
-	Timestamp time.Time    `json:"timestamp"`
+	Timestamp Time         `json:"timestamp"`
 	Added     []string     `json:"added"`
 	Message   string       `json:"message"`
 	Committer GitHubPerson `json:"committer"`
@@ -39,11 +64,11 @@ type GitHubRepo struct {
 	Homepage     string       `json:"homepage"`
 	Watchers     int          `json:"watchers"`
 	Language     string       `json:"language"`
-	PushedAt     time.Time    `json:"pushed_at"`
+	PushedAt     Time         `json:"pushed_at"`
 	Name         string       `json:"name"`
 	Organization string       `json:"organization"`
 	HasDownloads bool         `json:"has_downloads"`
-	CreatedAt    time.Time    `json:"created_at"`
+	CreatedAt    Time         `json:"created_at"`
 	URL          string       `json:"url"`
 	OpenIssues   int          `json:"open_issues"`
 	Forks        int          `json:"forks"`
